@@ -1,0 +1,20 @@
+# Core dependencies
+psycopg2-binary==2.9.7
+sentence-transformers==2.2.2
+google-genai>=0.3.0
+
+# Web scraping
+requests==2.31.0
+beautifulsoup4==4.12.2
+
+# Utilities
+tqdm==4.66.1
+
+# Machine Learning & AI (sentence-transformers dependencies)
+torch>=1.9.0
+transformers>=4.21.0
+numpy>=1.21.0
+scikit-learn>=1.0.0
+
+# Optional: for better performance
+scipy>=1.7.0
