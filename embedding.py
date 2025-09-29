@@ -3,18 +3,18 @@ from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 from credential import config
 
-# ----------------- DB CONNECTION -----------------
-DB_NAME = config['DB_NAME']
-DB_USER = config['DB_USER']
-DB_PASSWORD = config['DB_PASSWORD']
-DB_HOST = config['DB_HOST']
-DB_PORT = config['DB_PORT']
+# --- Kết nối DB (Giữ nguyên) ---
+DB_NAME = config.DB_NAME
+DB_USER = config.DB_USER
+DB_PASS = config.DB_PASS
+DB_HOST = config.DB_HOST
+DB_PORT = config.DB_PORT
 
 # DB connect
 conn = psycopg2.connect(
     dbname=DB_NAME,
     user=DB_USER,
-    password=DB_PASSWORD,
+    password=DB_PASS,
     host=DB_HOST,
     port=DB_PORT
 )
