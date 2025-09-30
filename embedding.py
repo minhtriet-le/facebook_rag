@@ -3,7 +3,7 @@ from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 from credential import config
 
-# --- Kết nối DB (Giữ nguyên) ---
+# --- Database Connection ---
 DB_NAME = config.DB_NAME
 DB_USER = config.DB_USER
 DB_PASS = config.DB_PASS
@@ -34,7 +34,7 @@ model = SentenceTransformer("BAAI/bge-m3")
 # ----------------- GET CHUNKS TO EMBED -----------------
 cur.execute("SELECT id, chunk FROM chunks WHERE embedding IS NULL;")
 rows = cur.fetchall()
-print(f"⚡ {len(rows)} chunks cần embed")
+print(f"⚡ {len(rows)} chunks need embedding")
 
 # ----------------- EMBEDDING & SAVE -----------------
 for chunk_id, text in tqdm(rows):
@@ -47,4 +47,4 @@ for chunk_id, text in tqdm(rows):
 
 conn.commit()
 conn.close()
-print("✅ Hoàn tất embedding vào pgvector")
+print("✅ Completed embedding into pgvector")

@@ -6,13 +6,13 @@ import time
 import psycopg2
 from credential import config
 
-# Đọc danh sách root URLs từ file
+# Read list of root URLs from file
 with open("roots.txt") as f:
     ROOT_URLS = [line.strip().rstrip("/") + "/" for line in f if line.strip()]
 
 visited = set()
 
-# --- Kết nối DB (Giữ nguyên) ---
+# --- Database Connection ---
 DB_NAME = config.DB_NAME
 DB_USER = config.DB_USER
 DB_PASS = config.DB_PASS
@@ -29,7 +29,7 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-# Tạo bảng
+# Create tables
 cur.execute("""
 CREATE TABLE IF NOT EXISTS documents (
     id SERIAL PRIMARY KEY,
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS chunks (
 conn.commit()
 
 def auto_chunk(text, max_chunk_size=2000, overlap=200):
-    """Tự động chia nhỏ text nếu quá dài."""
+    """Automatically split text into smaller chunks if it's too long."""
     if len(text) <= max_chunk_size:
         return [text]
     chunks = []
@@ -61,7 +61,7 @@ def auto_chunk(text, max_chunk_size=2000, overlap=200):
     return chunks
 
 def extract_section_text(soup):
-    """Lấy text từ section có class hoặc id được chỉ định"""
+    """Extract text from sections with specified class or id"""
     target_classes = [
         "_9ntw _9ntz _9nu2",
         "_9ntw _9nty _9nu2",
@@ -73,14 +73,14 @@ def extract_section_text(soup):
 
     texts = []
 
-    # Theo class
+    # By class
     for cls in target_classes:
         for sec in soup.find_all("section", class_=cls):
             txt = sec.get_text(separator=" ", strip=True)
             if txt:
                 texts.append(txt)
 
-    # Theo id
+    # By id
     sec = soup.find("section", id="policy-details")
     if sec:
         txt = sec.get_text(separator=" ", strip=True)
@@ -94,20 +94,20 @@ EXCLUDE_PREFIXES = [
 ]
 
 def is_excluded(url):
-    """Kiểm tra xem url có nằm trong danh sách exclude không"""
+    """Check if url is in the exclude list"""
     return any(url.startswith(prefix) for prefix in EXCLUDE_PREFIXES)
 
 def crawl(url, root_url, sleep_time=0.01):
     if url in visited or is_excluded(url):
         return
     visited.add(url)
-    print(f"🔎 Đang crawl: {url}")
+    print(f"🔎 Crawling: {url}")
 
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
     except Exception as e:
-        print(f"⚠️ Lỗi khi tải {url}: {e}")
+        print(f"⚠️ Error loading {url}: {e}")
         return
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -115,7 +115,7 @@ def crawl(url, root_url, sleep_time=0.01):
 
     text = extract_section_text(soup)
     if not text.strip():
-        print(f"⚠️ Không tìm thấy text hợp lệ trong {url}")
+        print(f"⚠️ No valid text found in {url}")
         return
 
     # Insert document
@@ -130,7 +130,7 @@ def crawl(url, root_url, sleep_time=0.01):
         cur.execute("SELECT id FROM documents WHERE url=%s", (url,))
         doc_id = cur.fetchone()[0]
 
-    # Chunk text và insert
+    # Chunk text and insert
     chunks = auto_chunk(text)
     for chunk in chunks:
         cur.execute(
@@ -139,7 +139,7 @@ def crawl(url, root_url, sleep_time=0.01):
         )
     conn.commit()
 
-    # Crawl link con trong cùng root_url
+    # Crawl child links within the same root_url
     for a_tag in soup.find_all("a", href=True):
         link = urljoin(url, a_tag["href"])
         if link.startswith(root_url) and not is_excluded(link):

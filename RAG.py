@@ -1,18 +1,17 @@
 import psycopg2
 from sentence_transformers import SentenceTransformer
-# Thay thế: import OpenAI
 from google import genai 
-from google.genai import types # Thêm để sử dụng cấu hình
-from google.genai.errors import APIError # Thêm để xử lý lỗi
+from google.genai import types # Added to use configuration
+from google.genai.errors import APIError # Added for error handling
 
 from credential import config
-import os # Thêm để quản lý API Key tốt hơn
+import os # Added for better API Key management
 
 # --- Config ---
 TOP_K = 5
 query = "Đăng tải nội dung bóc lột trẻ em có đúng với chính sách Facebook?"
 
-# --- Kết nối DB (Giữ nguyên) ---
+# --- Database Connection ---
 DB_NAME = config.DB_NAME
 DB_USER = config.DB_USER
 DB_PASS = config.DB_PASS
@@ -29,13 +28,13 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-# ----------------- Load embedding model (Giữ nguyên) -----------------
-# Lưu ý: Nếu bạn muốn dùng embedding của Gemini, bạn sẽ cần thay thế phần này.
-# Nhưng để giữ nguyên logic Retrieval Augment Generation (RAG) hiện tại, ta giữ nguyên.
+# ----------------- Load embedding model -----------------
+# Note: If you want to use Gemini embeddings, you'll need to replace this part.
+# But to maintain the current Retrieval Augmented Generation (RAG) logic, we keep it as is.
 model = SentenceTransformer("BAAI/bge-m3")
 query_emb = model.encode(query).tolist()
 
-# ----------------- Retrieval (Giữ nguyên) -----------------
+# ----------------- Retrieval -----------------
 cur.execute("""
 SELECT id, chunk, embedding <-> %s::vector AS distance
 FROM chunks
@@ -47,16 +46,16 @@ results = cur.fetchall()
 context = "\n".join([r[1] for r in results])
 conn.close()
 
-# ----------------- Gemini API (Phần thay đổi chính) -----------------
+# ----------------- Gemini API (Main changes section) -----------------
 
 # try:
 #     client = genai.Client()
 # except Exception as e:
-#     print(f"Lỗi khởi tạo Gemini Client: {e}")
-#     print("Vui lòng đảm bảo biến môi trường GEMINI_API_KEY đã được thiết lập.")
+#     print(f"Error initializing Gemini Client: {e}")
+#     print("Please ensure the GEMINI_API_KEY environment variable is set.")
 #     exit()
 
-# Cấu hình Generation
+# Generation configuration
 generation_config = types.GenerateContentConfig(
     temperature=0.2
 )
@@ -71,10 +70,10 @@ Câu hỏi: {query}
 print("📝 Prompt:", prompt)
 
 # try:
-#     # Gọi Gemini API
-#     # Sử dụng mô hình Gemini phù hợp, ví dụ gemini-2.5-flash
+#     # Call Gemini API
+#     # Use appropriate Gemini model, for example gemini-2.5-flash
 #     resp = client.models.generate_content(
-#         model="gemini-2.5-flash", # Mô hình mạnh mẽ, thay thế gpt-4.1-mini
+#         model="gemini-2.5-flash", # Powerful model, replacing gpt-4.1-mini
 #         contents=[prompt],
 #         config=generation_config,
 #     )
@@ -83,6 +82,6 @@ print("📝 Prompt:", prompt)
 #     print("💡 Trả lời:", answer)
 
 # except APIError as e:
-#     print(f"Lỗi gọi Gemini API: {e}")
+#     print(f"Error calling Gemini API: {e}")
 # except Exception as e:
-#     print(f"Đã xảy ra lỗi không xác định: {e}")
+#     print(f"An unknown error occurred: {e}")
